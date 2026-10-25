@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inteligentné Nástenné Hodiny - Pevný Ciferník</title>
+    <title>Inteligentné Nástenné Hodiny - Bratislava</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -118,32 +118,18 @@
             line-height: 1;
             color: var(--accent-color);
             text-shadow: 0 0 30px var(--accent-glow), 0 0 60px var(--accent-glow);
-            letter-spacing: 2px;
+            letter-spacing: 4px;
             margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* Každá číslica má pevne vyhradený box, takže sa nič neposúva do strán */
-        .digit-box {
-            display: inline-block;
-            text-align: center;
-            width: 0.65em; 
-        }
-
-        .separator {
-            display: inline-block;
-            width: 0.25em;
-            text-align: center;
+            /* Toto zabezpečí, že každá číslica má presne rovnakú pevnú šírku bez poskakovania */
+            font-variant-numeric: tabular-nums;
         }
 
         .seconds {
             font-size: 6vw;
             opacity: 0.7;
             vertical-align: super;
-            margin-left: 15px;
-            display: inline-flex;
+            margin-left: 10px;
+            font-variant-numeric: tabular-nums;
         }
 
         .date-container {
@@ -179,6 +165,7 @@
             font-weight: 700;
             font-family: 'Orbitron', sans-serif;
             color: var(--accent-color);
+            font-variant-numeric: tabular-nums;
         }
 
         .condition {
@@ -199,7 +186,7 @@
 
         @media (max-width: 768px) {
             .clock-container { font-size: 18vw; }
-            .seconds { font-size: 8vw; margin-left: 8px; }
+            .seconds { font-size: 8vw; }
             .date-container { font-size: 1.2rem; }
             .top-bar { padding: 10px 15px; flex-direction: column; gap: 10px; }
         }
@@ -226,9 +213,8 @@
     </div>
 
     <div class="main-container">
-        <!-- Rozdelené do pevných boxov, aby sa číslice neposúvali -->
         <div class="clock-container" id="clock">
-            <span class="digit-box" id="h1">0</span><span class="digit-box" id="h2">0</span><span class="separator">:</span><span class="digit-box" id="m1">0</span><span class="digit-box" id="m2">0</span><span class="seconds"><span class="digit-box" id="s1">0</span><span class="digit-box" id="s2">0</span></span>
+            00:00<span class="seconds" id="seconds">00</span>
         </div>
         
         <div class="date-container" id="date">
@@ -288,13 +274,8 @@
             let minutes = String(currentInternetTime.getMinutes()).padStart(2, '0');
             let seconds = String(currentInternetTime.getSeconds()).padStart(2, '0');
 
-            // Priradenie každej číslice do vlastného pevného boxu
-            document.getElementById('h1').textContent = hours[0];
-            document.getElementById('h2').textContent = hours[1];
-            document.getElementById('m1').textContent = minutes[0];
-            document.getElementById('m2').textContent = minutes[1];
-            document.getElementById('s1').textContent = seconds[0];
-            document.getElementById('s2').textContent = seconds[1];
+            document.getElementById('clock.innerHTML = `${hours}:${minutes}<span class="seconds" id="seconds">${seconds}</span>`;
+            document.getElementById('clock').innerHTML = `${hours}:${minutes}<span class="seconds">${seconds}</span>`;
 
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             document.getElementById('date').textContent = currentInternetTime.toLocaleDateString('sk-SK', options);
@@ -331,7 +312,7 @@
                 document.getElementById('wDesc').textContent = `${desc} (Vlhkosť: ${humidity}%)`;
                 document.getElementById('wIcon').textContent = icon;
             } catch (error) {
-                console.error("Chyba pri načítaní počasia:", error);
+                console.error("Chyba pri načítaní počasie:", error);
                 document.getElementById('wDesc').textContent = "Nepodarilo sa načítať počasie";
             }
         }
