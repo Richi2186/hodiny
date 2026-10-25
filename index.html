@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inteligentné Nástenné Hodiny - Bratislava</title>
+    <title>Inteligentné Nástenné Hodiny - Online Čas</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -193,10 +193,10 @@
     <div class="top-bar">
         <div class="location-info">
             📍 <span>Bratislava - mesto</span>
-            <div class="time-source-badge">⚡ Live Systémový čas</div>
+            <div class="time-source-badge" id="timeBadge">🌐 NTP Internetový čas</div>
         </div>
         <div class="controls">
-            <button id="refreshWeather" title="Obnoviť počasie">🔄 Obnoviť</button>
+            <button id="refreshAll" title="Obnoviť čas a počasie">🔄 Obnoviť</button>
             <select id="colorPicker" onchange="changeColor(this.value)">
                 <option value="#ffffff">Biela (Predvolená)</option>
                 <option value="#3b82f6">Neónová Modrá</option>
@@ -226,31 +226,61 @@
     </div>
 
     <div class="bottom-bar">
-        Open-Meteo API | Stabilná verzia
+        Online NTP čas + Open-Meteo počasie
     </div>
 
     <script>
         const LAT = 48.1486;
         const LON = 17.1077;
 
-        // Plynulá aktualizácia času a dátumu
+        let timeOffset = 0; // Rozdiel medzi internetovým časom a zariadením
+
+        // Sťahovanie presného času zo zabezpečeného internetového API (World Time API cez HTTPS)
+        async function fetchNetworkTime() {
+            try {
+                const response = await fetch('https://worldtimeapi.org/api/timezone/Europe/Bratislava');
+                if (!response.ok) throw new Error('Chyba servera');
+                
+                const data = await response.json();
+                const serverTimeMs = data.unixtime * 1000;
+                const localTimeMs = new Date().getTime();
+                
+                // Vypočítame korekciu, aby hodiny presne sedeli s internetovým časom
+                timeOffset = serverTimeMs - localTimeMs;
+                
+                document.getElementById('timeBadge').textContent = "🌐 NTP Internetový čas";
+                document.getElementById('timeBadge.style.color = '#10b981';
+            } catch (error) {
+                console.warn("Nepodarilo sa načítať internetový čas, používam záložný čas.", error);
+                document.getElementById('timeBadge').textContent = "⚠️ Lokálny čas (Záloha)";
+                document.getElementById('timeBadge').style.color = '#f59e0b';
+            }
+        }
+
+        // Plynulý beh hodín každú sekundu
         function updateClock() {
-            const now = new Date();
+            // Aktuálny čas zariadenia + vypočítaná korekcia z internetu
+            const correctedDate = new Date(new Date().getTime() + timeOffset);
             
-            let hours = String(now.getHours()).padStart(2, '0');
-            let minutes = String(now.getMinutes()).padStart(2, '0');
-            let seconds = String(now.getSeconds()).padStart(2, '0');
+            let hours = String(correctedDate.getHours()).padStart(2, '0');
+            let minutes = String(correctedDate.getMinutes()).padStart(2, '0');
+            let seconds = String(correctedDate.getSeconds()).padStart(2, '0');
 
             document.getElementById('clock').innerHTML = `${hours}:${minutes}<span class="seconds">${seconds}</span>`;
 
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            document.getElementById('date').textContent = now.toLocaleDateString('sk-SK', options);
+            document.getElementById('date').textContent = correctedDate.toLocaleDateString('sk-SK', options);
         }
+
+        // Načítaj internetový čas pri štarte
+        fetchNetworkTime();
+        // A pre istotu ho preveruj každých 5 minút, aby sa čas nerozchádzal
+        setInterval(fetchNetworkTime, 5 * 60 * 1000);
 
         setInterval(updateClock, 1000);
         updateClock();
 
-        // Počasie z Open-Meteo
+        // Počasie z Open-Meteo pre Bratislavu
         async function fetchWeather() {
             try {
                 const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,relative_humidity_2m,weather_code&timezone=Europe/Bratislava`);
@@ -277,14 +307,18 @@
                 document.getElementById('wIcon').textContent = icon;
             } catch (error) {
                 console.error("Chyba pri načítaní počasia:", error);
-                document.getElementById('wDesc').textContent = "Nepodarilo sa načítat počasie";
+                document.getElementById('wDesc').textContent = "Nepodarilo sa načítať počasie";
             }
         }
 
         fetchWeather();
         setInterval(fetchWeather, 10 * 60 * 1000);
 
-        document.getElementById('refreshWeather').addEventListener('click', fetchWeather);
+        // Tlačidlo komplexnej obnovy (overí internetový čas aj počasie)
+        document.getElementById('refreshAll').addEventListener('click', () => {
+            fetchNetworkTime();
+            fetchWeather();
+        });
 
         function changeColor(hex) {
             document.documentElement.style.setProperty('--accent-color', hex);
