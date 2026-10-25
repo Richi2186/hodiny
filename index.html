@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inteligentné Nástenné Hodiny - Bratislava</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Použitie špeciálneho monospaced fontu pre digitálne hodiny -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
             --accent-color: #ffffff;
@@ -111,45 +112,25 @@
             width: 100%;
         }
 
-        /* Hodiny s pevnými slotmi pre znaky, aby sa neprekrývali ani neposkakovali */
+        /* Hlavné hodiny s monospaced fontom - žiadne skákanie ani prekrývanie */
         .clock-container {
-            font-family: 'Orbitron', sans-serif;
+            font-family: 'Share Tech Mono', monospace;
             font-size: 14vw;
-            font-weight: 900;
+            font-weight: 400;
             line-height: 1;
             color: var(--accent-color);
             text-shadow: 0 0 30px var(--accent-glow), 0 0 60px var(--accent-glow);
-            letter-spacing: 2px;
+            letter-spacing: 4px;
             margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .time-group {
-            display: inline-flex;
-        }
-
-        .digit {
-            display: inline-block;
-            text-align: center;
             font-variant-numeric: tabular-nums;
-            min-width: 0.65em; /* Zabezpečuje rovnaký priestor pre každú číslicu bez prekrývania */
-        }
-
-        .separator {
-            display: inline-block;
-            text-align: center;
-            min-width: 0.3em;
         }
 
         .seconds {
             font-size: 6vw;
             opacity: 0.7;
             vertical-align: super;
-            margin-left: 15px;
-            display: inline-flex;
-            align-items: flex-start;
+            margin-left: 10px;
+            font-family: 'Share Tech Mono', monospace;
         }
 
         .date-container {
@@ -183,9 +164,8 @@
         .temp {
             font-size: 2.2rem;
             font-weight: 700;
-            font-family: 'Orbitron', sans-serif;
+            font-family: 'Share Tech Mono', monospace;
             color: var(--accent-color);
-            font-variant-numeric: tabular-nums;
         }
 
         .condition {
@@ -205,8 +185,8 @@
         }
 
         @media (max-width: 768px) {
-            .clock-container { font-size: 17vw; }
-            .seconds { font-size: 7vw; margin-left: 8px; }
+            .clock-container { font-size: 18vw; }
+            .seconds { font-size: 8vw; }
             .date-container { font-size: 1.2rem; }
             .top-bar { padding: 10px 15px; flex-direction: column; gap: 10px; }
         }
@@ -233,18 +213,8 @@
     </div>
 
     <div class="main-container">
-        <!-- Rozdelené do bezpečných pevných blokov, ktoré zabránia prekrývaniu -->
-        <div class="clock-container">
-            <span class="time-group">
-                <span class="digit" id="h1">0</span><span class="digit" id="h2">0</span>
-            </span>
-            <span class="separator">:</span>
-            <span class="time-group">
-                <span class="digit" id="m1">0</span><span class="digit" id="m2">0</span>
-            </span>
-            <span class="seconds">
-                <span class="digit" id="s1">0</span><span class="digit" id="s2">0</span>
-            </span>
+        <div class="clock-container" id="clock">
+            00:00<span class="seconds" id="seconds">00</span>
         </div>
         
         <div class="date-container" id="date">
@@ -261,7 +231,7 @@
     </div>
 
     <div class="bottom-bar">
-        Stabilný ciferník + Internetový čas + Open-Meteo počasie
+        Pevný ciferník + Internetový čas + Open-Meteo počasie
     </div>
 
     <script>
@@ -304,13 +274,7 @@
             let minutes = String(currentInternetTime.getMinutes()).padStart(2, '0');
             let seconds = String(currentInternetTime.getSeconds()).padStart(2, '0');
 
-            // Vloženie každej číslice do jej vlastného bezpečného kontajnera
-            document.getElementById('h1').textContent = hours[0];
-            document.getElementById('h2').textContent = hours[1];
-            document.getElementById('m1').textContent = minutes[0];
-            document.getElementById('m2').textContent = minutes[1];
-            document.getElementById('s1').textContent = seconds[0];
-            document.getElementById('s2').textContent = seconds[1];
+            document.getElementById('clock').innerHTML = `${hours}:${minutes}<span class="seconds" id="seconds">${seconds}</span>`;
 
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             document.getElementById('date').textContent = currentInternetTime.toLocaleDateString('sk-SK', options);
