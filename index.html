@@ -120,7 +120,6 @@
             text-shadow: 0 0 30px var(--accent-glow), 0 0 60px var(--accent-glow);
             letter-spacing: 4px;
             margin-bottom: 20px;
-            /* Toto zabezpečí, že každá číslica má presne rovnakú pevnú šírku bez poskakovania */
             font-variant-numeric: tabular-nums;
         }
 
@@ -214,7 +213,7 @@
 
     <div class="main-container">
         <div class="clock-container" id="clock">
-            00:00<span class="seconds" id="seconds">00</span>
+            --:--<span class="seconds" id="seconds">--</span>
         </div>
         
         <div class="date-container" id="date">
@@ -262,7 +261,7 @@
                         document.getElementById('timeBadge').textContent = "🌐 Serverový Čas";
                     }
                 } catch (e2) {
-                    document.getElementById('timeBadge').textContent = "⚠️ Lokálna záloha";
+                    document.getElementById('timeBadge').textContent = "⚠️ Záložný čas";
                 }
             }
         }
@@ -274,18 +273,19 @@
             let minutes = String(currentInternetTime.getMinutes()).padStart(2, '0');
             let seconds = String(currentInternetTime.getSeconds()).padStart(2, '0');
 
-            document.getElementById('clock.innerHTML = `${hours}:${minutes}<span class="seconds" id="seconds">${seconds}</span>`;
             document.getElementById('clock').innerHTML = `${hours}:${minutes}<span class="seconds">${seconds}</span>`;
 
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             document.getElementById('date').textContent = currentInternetTime.toLocaleDateString('sk-SK', options);
         }
 
+        // Okamžité spustenie hodín, aby nezostali nuly
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        // Synchronizácia s internetovým časom na pozadí
         syncInternetTime();
         setInterval(syncInternetTime, 5 * 60 * 1000);
-
-        setInterval(updateClock, 1000);
-        updateClock();
 
         async function fetchWeather() {
             try {
@@ -312,7 +312,7 @@
                 document.getElementById('wDesc').textContent = `${desc} (Vlhkosť: ${humidity}%)`;
                 document.getElementById('wIcon').textContent = icon;
             } catch (error) {
-                console.error("Chyba pri načítaní počasie:", error);
+                console.error("Chyba pri načítaní počasia:", error);
                 document.getElementById('wDesc').textContent = "Nepodarilo sa načítať počasie";
             }
         }
