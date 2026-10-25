@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inteligentné Nástenné Hodiny - Bratislava</title>
+    <title>Inteligentné Nástenné Hodiny - Pevný Ciferník</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -120,13 +120,30 @@
             text-shadow: 0 0 30px var(--accent-glow), 0 0 60px var(--accent-glow);
             letter-spacing: 2px;
             margin-bottom: 20px;
-            transition: color 0.3s, text-shadow 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Každá číslica má pevne vyhradený box, takže sa nič neposúva do strán */
+        .digit-box {
+            display: inline-block;
+            text-align: center;
+            width: 0.65em; 
+        }
+
+        .separator {
+            display: inline-block;
+            width: 0.25em;
+            text-align: center;
         }
 
         .seconds {
             font-size: 6vw;
             opacity: 0.7;
             vertical-align: super;
+            margin-left: 15px;
+            display: inline-flex;
         }
 
         .date-container {
@@ -182,7 +199,7 @@
 
         @media (max-width: 768px) {
             .clock-container { font-size: 18vw; }
-            .seconds { font-size: 8vw; }
+            .seconds { font-size: 8vw; margin-left: 8px; }
             .date-container { font-size: 1.2rem; }
             .top-bar { padding: 10px 15px; flex-direction: column; gap: 10px; }
         }
@@ -193,7 +210,7 @@
     <div class="top-bar">
         <div class="location-info">
             📍 <span>Bratislava - mesto</span>
-            <div class="time-source-badge">🌐 Online Časová zóna</div>
+            <div class="time-source-badge" id="timeBadge">🌐 Stabilný Čas</div>
         </div>
         <div class="controls">
             <button id="refreshAll" title="Obnoviť dáta">🔄 Obnoviť</button>
@@ -209,9 +226,11 @@
     </div>
 
     <div class="main-container">
+        <!-- Rozdelené do pevných boxov, aby sa číslice neposúvali -->
         <div class="clock-container" id="clock">
-            00:00<span class="seconds" id="seconds">00</span>
+            <span class="digit-box" id="h1">0</span><span class="digit-box" id="h2">0</span><span class="separator">:</span><span class="digit-box" id="m1">0</span><span class="digit-box" id="m2">0</span><span class="seconds"><span class="digit-box" id="s1">0</span><span class="digit-box" id="s2">0</span></span>
         </div>
+        
         <div class="date-container" id="date">
             Načítavam dátum...
         </div>
@@ -226,40 +245,67 @@
     </div>
 
     <div class="bottom-bar">
-        Open-Meteo počasie + Automatická časová zóna Bratislava
+        Pevný ciferník + Internetový čas + Open-Meteo počasie
     </div>
 
     <script>
         const LAT = 48.1486;
         const LON = 17.1077;
 
-        // Presný čas pre Bratislavu cez natívnu internú timezone databázu prehliadača (vždy aktuálny stredoeurópsky čas vrátane letného/zimného)
-        function updateClock() {
-            const now = new Date();
-            
-            // Získame presný čas pre Bratislavu bez ohľadu na to, aké hlúposti by malo zariadenie v nastaveniach
-            const optionsTime = { timeZone: 'Europe/Bratislava', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
-            const timeString = new Intl.DateTimeFormat('sk-SK', optionsTime).format(now);
-            
-            // Rozdelíme čas na hodiny, minúty a sekundy
-            const parts = timeString.split(':');
-            if (parts.length >= 3) {
-                let hours = parts[0];
-                let minutes = parts[1];
-                let seconds = parts[2];
+        let timeOffset = 0;
 
-                document.getElementById('clock').innerHTML = `${hours}:${minutes}<span class="seconds">${seconds}</span>`;
+        async function syncInternetTime() {
+            try {
+                const response = await fetch('https://timeapi.io/api/Time/current/zone?timeZone=Europe/Bratislava');
+                if (!response.ok) throw new Error('API nedostupné');
+                const data = await response.json();
+                
+                const serverTime = new Date(data.dateTime).getTime();
+                const localTime = new Date().getTime();
+                timeOffset = serverTime - localTime;
+                
+                document.getElementById('timeBadge').textContent = "🌐 Online NTP Čas";
+            } catch (e1) {
+                try {
+                    const res = await fetch(window.location.href, { method: 'HEAD' });
+                    const dateHeader = res.headers.get('Date');
+                    if (dateHeader) {
+                        const serverTime = new Date(dateHeader).getTime();
+                        const localTime = new Date().getTime();
+                        timeOffset = serverTime - localTime;
+                        document.getElementById('timeBadge').textContent = "🌐 Serverový Čas";
+                    }
+                } catch (e2) {
+                    document.getElementById('timeBadge').textContent = "⚠️ Lokálna záloha";
+                }
             }
-
-            // Dátum pre Bratislavu
-            const optionsDate = { timeZone: 'Europe/Bratislava', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            document.getElementById('date').textContent = new Intl.DateTimeFormat('sk-SK', optionsDate).format(now);
         }
+
+        function updateClock() {
+            const currentInternetTime = new Date(new Date().getTime() + timeOffset);
+            
+            let hours = String(currentInternetTime.getHours()).padStart(2, '0');
+            let minutes = String(currentInternetTime.getMinutes()).padStart(2, '0');
+            let seconds = String(currentInternetTime.getSeconds()).padStart(2, '0');
+
+            // Priradenie každej číslice do vlastného pevného boxu
+            document.getElementById('h1').textContent = hours[0];
+            document.getElementById('h2').textContent = hours[1];
+            document.getElementById('m1').textContent = minutes[0];
+            document.getElementById('m2').textContent = minutes[1];
+            document.getElementById('s1').textContent = seconds[0];
+            document.getElementById('s2').textContent = seconds[1];
+
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('date').textContent = currentInternetTime.toLocaleDateString('sk-SK', options);
+        }
+
+        syncInternetTime();
+        setInterval(syncInternetTime, 5 * 60 * 1000);
 
         setInterval(updateClock, 1000);
         updateClock();
 
-        // Počasie z Open-Meteo pre Bratislavu
         async function fetchWeather() {
             try {
                 const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,relative_humidity_2m,weather_code&timezone=Europe/Bratislava`);
@@ -294,7 +340,7 @@
         setInterval(fetchWeather, 10 * 60 * 1000);
 
         document.getElementById('refreshAll').addEventListener('click', () => {
-            updateClock();
+            syncInternetTime();
             fetchWeather();
         });
 
